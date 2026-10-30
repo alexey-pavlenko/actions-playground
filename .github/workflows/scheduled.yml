@@ -1,0 +1,33 @@
+name: Scheduled and manual
+
+on:
+  schedule:
+    - cron: "0 9 * * 1"                    # Mondays 09:00 UTC
+  workflow_dispatch:                       # adds a "Run workflow" button
+    inputs:
+      name:
+        description: "Who to greet"
+        default: "world"
+
+jobs:
+  greet:
+    runs-on: ubuntu-latest
+    env:
+      # Add a repo secret named MY_SECRET (Settings > Secrets and variables > Actions)
+      MY_SECRET: ${{ secrets.MY_SECRET }}
+    steps:
+      - name: Say hello
+        run: echo "Hello, ${{ inputs.name || 'scheduled run' }}!"
+
+      - name: Show context
+        run: |
+          echo "Event: ${{ github.event_name }}"
+          echo "Repo:  ${{ github.repository }}"
+          echo "Actor: ${{ github.actor }}"
+
+      - name: Check secret (value is masked in logs)
+        run: |
+          if [ -n "$MY_SECRET" ]; then echo "Secret is set: $MY_SECRET"; else echo "Secret not set"; fi
+
+      - name: Write a job summary
+        run: echo "### Ran on $(date -u)" >> "$GITHUB_STEP_SUMMARY"

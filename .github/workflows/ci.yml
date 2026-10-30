@@ -1,0 +1,41 @@
+name: CI
+
+# TRIGGERS: run on pushes to main and on every pull request
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  # Jobs run in parallel by default, each on a fresh VM
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4          # gets your code onto the runner
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip                       # caches dependencies between runs
+      - run: pip install -r requirements.txt
+      - run: ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:                              # one job per version, in parallel
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: pytest -v
+
+  # "needs" makes this job wait for the others (a dependency chain)
+  all-green:
+    needs: [lint, test]
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Lint and all test versions passed"
